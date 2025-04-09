@@ -1,0 +1,80 @@
+﻿@page "/products"
+@using ProductApp.Shared.Models
+@inject HttpClient HttpClient
+
+<h3> Products </h3>
+
+
+@if(products == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr><th>Name</th><th>Price</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var product in products)
+            {
+                <tr>
+                    <td>@product.Name</td>
+                    <td>@product.Price</td>
+                    <td>
+                        <button @onclick="() => Edit(product)">Edit</button>
+                        <a href="@($"{webFormsBase}/Pages/DeleteProduct.aspx?id={product.Id}")"> Delete</a>
+                        <a href="@($"{mvcBase}/ProductDetails/{product.Id}")"> View Details</a>
+
+
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h4> @(editing.Id == 0 ? "Add" : "Edit") Product </h4>
+    <input @bind="editing.Name" placeholder="Name" />
+    <input type = "number" @bind = "editing.Price" placeholder = "Price" />
+    <button @onclick="Save">Save</button>
+}
+
+
+@code{
+
+    List<Product> products;
+    Product editing = new();
+
+    string webFormsBase = "https://localhost:44361";
+    string mvcBase = "https://localhost:7172";
+
+    protected override async Task OnInitializedAsync()
+    {
+        products = await HttpClient.GetFromJsonAsync<List<Product>>("api/products");
+    }
+
+    void Edit(Product p)
+    {
+        editing = new Product
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Price = p.Price
+            };
+    }
+
+    async Task Save()
+    {
+        if (editing.Id == 0)
+        {
+            await HttpClient.PostAsJsonAsync("api/products", editing);
+        }
+        else
+        {
+            await HttpClient.PutAsJsonAsync($"api/products/{editing.Id}", editing);
+        }
+        products = await HttpClient.GetFromJsonAsync<List<Product>>("api/products");
+        editing = new Product();
+    }
+}
+}
